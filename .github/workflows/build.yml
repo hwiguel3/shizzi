@@ -94,3 +94,5 @@ jobs:
           name: lint-report
           path: app/build/reports/lint-results-debug.html
           if-no-files-found: ignore
+
+# ARMv7 CI trigger
