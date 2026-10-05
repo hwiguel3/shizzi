@@ -56,12 +56,39 @@ class DownstreamControl(private val context: Context) {
 
     fun startWifiTethering(): Pair<Boolean, String> {
         val viaTethering = startViaTetheringManager()
-        if (viaTethering.first) return viaTethering
+        if (viaTethering.first) {
+            logCurrentSoftApCredentials()
+            return viaTethering
+        }
 
         val viaWifiManager = startViaWifiManager()
-        return when {
+        val result = when {
             viaWifiManager.first -> viaWifiManager
             else -> false to "tethering[${viaTethering.second}]; wifiManager[${viaWifiManager.second}]"
+        }
+        if (result.first) logCurrentSoftApCredentials()
+        return result
+    }
+
+    private fun logCurrentSoftApCredentials() {
+        runCatching {
+            val wifiManager = context.getSystemService(Context.WIFI_SERVICE)
+                ?: error("wifi service unavailable")
+            val configuration = wifiManager.javaClass
+                .getMethod("getSoftApConfiguration")
+                .invoke(wifiManager)
+                ?: error("soft AP configuration unavailable")
+
+            val configClass = Class.forName("android.net.wifi.SoftApConfiguration")
+            val ssid = configClass.getMethod("getSsid").invoke(configuration) as? String
+            val passphrase = configClass.getMethod("getPassphrase").invoke(configuration) as? String
+
+            SessionLog.info(
+                "hotspot credentials: ssid=${ssid ?: "<unknown>"} " +
+                    "passphrase=${passphrase ?: "<none>"}",
+            )
+        }.onFailure { failure ->
+            SessionLog.warn("could not read hotspot credentials: ${failure.message}")
         }
     }
 

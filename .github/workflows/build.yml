@@ -7,7 +7,6 @@ name: Build
 
 on:
   push:
-    branches: [main]
   pull_request:
   workflow_dispatch:
 
@@ -59,7 +58,7 @@ jobs:
         uses: gradle/actions/setup-gradle@v6
 
       - name: Test datapath
-        # Runs on the host, not under the NDK: an android/arm64 test binary
+        # Runs on the host, not under the NDK: an android/arm test binary
         # would not execute on this runner. bind.go is tagged android-only and
         # stubbed elsewhere precisely so the package builds here.
         run: cd datapath && go test ./...
@@ -71,9 +70,9 @@ jobs:
         env:
           ANDROID_NDK_HOME: ${{ env.ANDROID_SDK_ROOT }}/ndk/27.0.12077973
         run: |
-          CC="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android24-clang"
+          CC="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/armv7a-linux-androideabi24-clang"
           cd datapath
-          CGO_ENABLED=1 GOOS=android GOARCH=arm64 CC="$CC" go vet ./...
+          CGO_ENABLED=1 GOOS=android GOARCH=arm GOARM=7 CC="$CC" go vet ./...
 
       - name: Build debug APK
         run: ./gradlew assembleDebug --no-daemon
@@ -95,3 +94,5 @@ jobs:
           name: lint-report
           path: app/build/reports/lint-results-debug.html
           if-no-files-found: ignore
+
+# ARMv7 CI trigger
